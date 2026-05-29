@@ -78,6 +78,24 @@ TOOLS = [
             "required": ["line"],
         },
     },
+    {
+        "name": "stops_near",
+        "description": (
+            "Find MTA bus stops near a GPS coordinate. "
+            "Returns stop ids, names, and directions. "
+            "Use this when you know a location but not the stop id."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {"type": "number", "description": "Latitude"},
+                "lon": {"type": "number", "description": "Longitude"},
+                "radius": {"type": "number", "description": "Search radius in degrees (~0.003 = ~300m, default 0.003)"},
+                "timeout": {"type": "integer", "minimum": 5, "maximum": 120},
+            },
+            "required": ["lat", "lon"],
+        },
+    },
 ]
 
 
@@ -95,6 +113,12 @@ def _call_tool(name: str, args: dict) -> dict:
     elif name == "vehicles":
         path = "/api/mta/vehicles"
         qs = urlencode({"line": args.get("line", ""), "timeout": timeout})
+    elif name == "stops_near":
+        path = "/api/mta/stops/near"
+        params = {"lat": args.get("lat", 0), "lon": args.get("lon", 0), "timeout": timeout}
+        if args.get("radius"):
+            params["radius"] = args["radius"]
+        qs = urlencode(params)
     elif name == "route_stops":
         path = "/api/mta/route/stops"
         qs = urlencode({"line": args.get("line", ""), "timeout": timeout})

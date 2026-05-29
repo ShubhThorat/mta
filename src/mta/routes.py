@@ -6,7 +6,7 @@ import json
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs
 
-from .sdk import fetch_arrivals, fetch_vehicles, fetch_route_stops
+from .sdk import fetch_arrivals, fetch_vehicles, fetch_route_stops, fetch_stops_near
 
 
 def _parse_qs(environ) -> dict[str, list[str]]:
@@ -88,6 +88,23 @@ def dispatch_mta(method: str, path: str, environ) -> tuple[str, dict]:
                     {"error": "pass line= (route, e.g. M15)", "example": "/api/mta/route/stops?line=M15"},
                 )
             data = fetch_route_stops(line, timeout=timeout)
+            return ("200 OK", {"data": data})
+
+        # /api/mta/stops/near?lat=40.75&lon=-73.98
+        if parts[0] == "stops" and len(parts) == 2 and parts[1] == "near":
+            lat_s = _first(qs, "lat") or ""
+            lon_s = _first(qs, "lon") or ""
+            if not lat_s or not lon_s:
+                return (
+                    "400 Bad Request",
+                    {"error": "pass lat= and lon=", "example": "/api/mta/stops/near?lat=40.7485&lon=-73.9687"},
+                )
+            try:
+                lat, lon = float(lat_s), float(lon_s)
+            except ValueError:
+                return ("400 Bad Request", {"error": "lat and lon must be numbers"})
+            radius = float(_first(qs, "radius") or "0.003")
+            data = fetch_stops_near(lat, lon, radius=radius, timeout=timeout)
             return ("200 OK", {"data": data})
 
     except HTTPError as e:

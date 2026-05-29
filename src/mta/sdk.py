@@ -215,3 +215,21 @@ def fetch_route_stops(line: str, timeout: int = 30) -> dict:
         "stops": stops,
         "count": len(stops),
     }
+
+
+def fetch_stops_near(lat: float, lon: float, radius: float = 0.003, timeout: int = 30) -> dict:
+    """Find bus stops near a lat/lon coordinate."""
+    span = radius
+    data = _get("/api/where/stops-for-location.json", {
+        "lat": lat, "lon": lon,
+        "latSpan": span, "lonSpan": span,
+    }, timeout=timeout)
+
+    raw_stops = data.get("data", {}).get("stops") or []
+    stops = [_slim_stop(s) for s in raw_stops]
+    return {
+        "lat": lat,
+        "lon": lon,
+        "stops": stops,
+        "count": len(stops),
+    }
